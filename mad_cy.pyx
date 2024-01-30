@@ -1,4 +1,4 @@
-from heap import maxSortUp, maxSortDown, minSortDown, minSortUp
+from heap_cy import maxSortUp, maxSortDown, minSortDown, minSortUp
 
 
 def get_mad(mediator_top, mediator_bottom, median, wind_len, half_wind_len_p, half_win_m):

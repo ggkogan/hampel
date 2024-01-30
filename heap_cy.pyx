@@ -1,4 +1,3 @@
-import numpy as np
 """
 based on 2011 ashelly.myopenid.com under <http:#www.opensource.org/licenses/mit-license>
 I have slightly modified it to reduce the computation. Now it requires some initiation but it should run faster
@@ -6,11 +5,11 @@ and the code is simpler
 
 """
 
+import numpy as np
 
 # *--- Helper Functions ---*/
 def mmless(data, heap, i, k):
     return data[heap[i]] < data[heap[k]]
-
 
 # swaps items i&k in heap, maintains indexes
 def mmexchange(heap, pos, i, k):
@@ -20,7 +19,6 @@ def mmexchange(heap, pos, i, k):
     pos[heap[i]] = i
     pos[heap[k]] = k
     return 1
-
 
 # swaps items i&k if i<k  returns true if swapped
 def mmCmpExch(data, heap, pos, i, k):
