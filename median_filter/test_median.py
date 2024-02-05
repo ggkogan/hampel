@@ -38,14 +38,26 @@ if __name__ == "__main__":
         for a in range(n_tests):
             median_ref = ndimage.median_filter(x_test, kernel_size, mode='reflect')
         time_current = time.time() - t
-        if not np.all(median_ref == median):
-            print(kernel_size)
         ratio[i_size] = time_current / time_new
-    plt.figure()
-    plt.grid()
-    plt.scatter(kernel_sizes, ratio)
-    plt.xticks(np.arange(0, (kernel_sizes[-1] // 5 + 1) * 5, 5))
-    plt.xlabel('Kernel size')
-    plt.title('Computation time ratio [ndimage.median_filter/suggested]')
-    plt.axhline(1, linestyle='--', color='black')
-    plt.savefig(pathlib.Path(__file__).parent / 'time_ratio.png')
+        assert np.all(median_ref == median)
+
+    # plt.figure()
+    # plt.grid()
+    # plt.scatter(kernel_sizes, ratio)
+    # plt.xticks(np.arange(0, (kernel_sizes[-1] // 5 + 1) * 5, 5))
+    # plt.xlabel('Kernel size')
+    # plt.title('Computation time ratio [ndimage.median_filter/suggested]')
+    # plt.axhline(1, linestyle='--', color='black')
+    # plt.savefig(pathlib.Path(__file__).parent / 'time_ratio.png')
+
+    for mode in ['reflect', 'constant', 'nearest', 'mirror', 'wrap']:
+        # print(mode)
+        median_ref = ndimage.median_filter(x_test, kernel_size, mode=mode, cval=0)
+        median = median_filter(x_test, kernel_size, mode=mode, cval=0)
+        # plt.figure()
+        # plt.grid()
+        # plt.plot(median_ref)
+        # plt.plot(median)
+        # plt.show()
+        if not np.all(median_ref == median):
+            print(f"failed {mode} mode")

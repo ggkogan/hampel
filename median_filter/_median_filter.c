@@ -16,6 +16,14 @@ typedef struct Mediator_t
    int   minCt; //count of items in min heap
    int   maxCt; //count of items in max heap
 } Mediator;
+
+typedef enum {
+   REFLECT = 1,
+   CONSTANT = 2,
+   NEAREST = 3,
+   MIRROR = 4,
+   WRAP = 5
+} Mode;
  
 /*--- Helper Functions ---*/
  
@@ -126,14 +134,34 @@ void MediatorInsert(Mediator* m, Item v)
 }
  
 
-int median_filter(double* in, double* out, int arr_len, int win_len, int order)
+void median_filter(double* in, double* out, int arr_len, int win_len, int order, Mode mode, double cval)
 {
    int i, lim = (win_len - 1) / 2;
+   int arr_len_thresh = arr_len - 1;
    int lim2 = arr_len - lim;
    double value;
    Mediator* m = MediatorNew(win_len, order);
 
-   for (i=win_len - 1; i >-1; i--){MediatorInsert(m, in[i]);}
+   switch (mode)
+   {
+      // remove half a window from the boundary conditions?
+      case REFLECT:
+      for (i=win_len - 1; i >-1; i--){MediatorInsert(m, in[i]);}
+      break;
+      case CONSTANT:
+      for (i=win_len - 1; i >-1; i--){MediatorInsert(m, cval);}
+      break;
+      case NEAREST:
+      for (i=win_len - 1; i >-1; i--){MediatorInsert(m, in[0]);}
+      break;
+      case MIRROR:
+      for (i=win_len - 2; i >-1; i--){MediatorInsert(m, in[i]);}
+      break;
+      case WRAP:
+      for (i=0; i < win_len; i++){MediatorInsert(m, in[i]);}
+      break;
+   }
+
    for (i=0; i < lim; i++){MediatorInsert(m, in[i]);}
    for (i=lim; i<arr_len; i++)
    {
@@ -141,12 +169,44 @@ int median_filter(double* in, double* out, int arr_len, int win_len, int order)
       MediatorInsert(m, in[i]);
       out[i - lim] = m->data[m->heap[0]];
    }
-   int arr_len_thresh = arr_len - 1;
-   for (i=0; i<lim; i++)
+   switch (mode)
    {
+      case REFLECT:
+      for (i=0; i<lim; i++)
+      {
       MediatorInsert(m, in[arr_len_thresh - i]);
       out[lim2 + i] = m->data[m->heap[0]];
+      }
+      break;
+      case CONSTANT:
+      for (i=0; i<lim; i++)
+      {
+      MediatorInsert(m, cval);
+      out[lim2 + i] = m->data[m->heap[0]];
+      }
+      break;
+      case NEAREST:
+      for (i=0; i<lim; i++)
+      {
+      MediatorInsert(m, in[arr_len_thresh]);
+      out[lim2 + i] = m->data[m->heap[0]];
+      }
+      break;
+      case MIRROR:
+      for (i=1; i<lim; i++)
+      {
+      MediatorInsert(m, in[arr_len_thresh - i]);
+      out[lim2 + i] = m->data[m->heap[0]];
+      }
+      break;
+      case WRAP:
+      for (i=0; i < win_len; i++){
+      MediatorInsert(m, in[i]);
+      out[lim2 + i] = m->data[m->heap[0]];
+      }
+      break;
    }
+
 
    free(m);
 }
