@@ -23,31 +23,28 @@ if __name__ == "__main__":
     spikes[::impulse_intervals] = np.random.normal(scale=3, size=spikes[::impulse_intervals].size)
     x_test += spikes
 
-    kernel_sizes = np.arange(1, 251, 2)
-    ratio = np.empty_like(kernel_sizes)
-    for i_size, kernel_size in enumerate(kernel_sizes):
-        print(kernel_size)
+    n_tests = 101
 
+    kernel_sizes = np.arange(1, 53, 2)
+    ratio = np.empty(kernel_sizes.size)
+    for i_size, kernel_size in enumerate(kernel_sizes):
         t = time.time()
-        median = median_filter(x_test, kernel_size)
+        for a in range(n_tests):
+            median = median_filter(x_test, kernel_size)
         time_new = time.time() - t
 
         t = time.time()
-        median_ref = ndimage.median_filter(x_test, kernel_size)
+        for a in range(n_tests):
+            median_ref = ndimage.median_filter(x_test, kernel_size, mode='reflect')
         time_current = time.time() - t
-
         if not np.all(median_ref == median):
-            plt.figure()
-            plt.grid()
-            plt.plot(median_ref)
-            plt.plot(median)
-
-            plt.figure()
-            plt.grid()
-            plt.plot(median_ref - median)
-            plt.show()
+            print(kernel_size)
         ratio[i_size] = time_current / time_new
     plt.figure()
     plt.grid()
-    plt.plot(np.arange(1, 251, 2))
-    plt.show()
+    plt.scatter(kernel_sizes, ratio)
+    plt.xticks(np.arange(0, (kernel_sizes[-1] // 5 + 1) * 5, 5))
+    plt.xlabel('Kernel size')
+    plt.title('Computation time ratio [ndimage.median_filter/suggested]')
+    plt.axhline(1, linestyle='--', color='black')
+    plt.savefig('time_ratio.png')

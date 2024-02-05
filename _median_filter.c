@@ -1,5 +1,5 @@
 //Copyright (c) 2011 ashelly.myopenid.com under <http://w...content-available-to-author-only...e.org/licenses/mit-license>
-// I slightly optimized by restriction of cases and proper initialization
+// I optimized by restriction of cases and proper initialization
 
 #include <stdlib.h>
 #include <stdio.h>
@@ -93,8 +93,8 @@ Mediator* MediatorNew(int nItems, int order)
    m->minCt = order - 1;
    m->maxCt = nItems - order;
    while (nItems--)  //set up initial heap fill pattern: median,max,min,max,...
-   {  
-      m->pos[nItems] = 0;
+   {
+      m->data[nItems] = 0;
       m->pos[nItems]= ((nItems+1)/2) * ((nItems&1)?-1:1);
       m->heap[m->pos[nItems]]=nItems;
    }
@@ -126,16 +126,18 @@ void MediatorInsert(Mediator* m, Item v)
 }
  
 
-void median_filter(double* in, double* out, int arr_len, int win_len, int order)
+int median_filter(double* in, double* out, int arr_len, int win_len, int order)
 {
    int i, lim = (win_len - 1) / 2;
    int lim2 = arr_len - lim;
+   double value;
    Mediator* m = MediatorNew(win_len, order);
 
    for (i=win_len - 1; i >-1; i--){MediatorInsert(m, in[i]);}
    for (i=0; i < lim; i++){MediatorInsert(m, in[i]);}
    for (i=lim; i<arr_len; i++)
    {
+      value = in[i];
       MediatorInsert(m, in[i]);
       out[i - lim] = m->data[m->heap[0]];
    }
