@@ -5,6 +5,7 @@ sys.path.append('../../scipy')
 from scipy_suggest import ndimage as ndimage_new
 from median_filter import median_filter
 import time
+import pathlib
 
 import matplotlib.pyplot as plt
 
@@ -48,11 +49,11 @@ if __name__ == "__main__":
             if not np.all(median_ref == median):
                 print(f"failed {mode} mode for kernel size of {kernel_size}")
 
-    # plt.figure()
-    # plt.grid()
-    # plt.scatter(kernel_sizes, ratio)
-    # plt.xticks(np.arange(0, (kernel_sizes[-1] // 5 + 1) * 5, 5))
-    # plt.xlabel('Kernel size')
-    # plt.title('Computation time ratio [ndimage.median_filter/suggested]')
-    # plt.axhline(1, linestyle='--', color='black')
-    # plt.savefig(pathlib.Path(__file__).parent / 'time_ratio.png')
+    plt.figure()
+    plt.grid()
+    plt.scatter(kernel_sizes, ratio)
+    plt.xticks(np.arange(0, (kernel_sizes[-1] // 5 + 1) * 5, 5))
+    plt.xlabel('Kernel size')
+    plt.title('Computation time ratio [ndimage.median_filter/suggested]')
+    plt.axhline(1, linestyle='--', color='black')
+    plt.savefig(pathlib.Path(__file__).parent / 'time_ratio.png')

@@ -156,7 +156,7 @@ void median_filter(double* in, double* out, int arr_len, int win_len, int order,
       for (i=win_len - 1; i > 0; i--){MediatorInsert(m, in[i]);}
       break;
       case WRAP:
-      for (i=0; i < win_len; i++){MediatorInsert(m, in[i]);}
+      for (i=arr_len - win_len; i < arr_len; i++){MediatorInsert(m, in[i]);}
       break;
    }
 
@@ -178,7 +178,6 @@ void median_filter(double* in, double* out, int arr_len, int win_len, int order,
       }
       break;
       case CONSTANT:
-      arr_len_thresh = arr_len - 1;
       for (i=0; i<lim; i++)
       {
       MediatorInsert(m, cval);
@@ -202,7 +201,6 @@ void median_filter(double* in, double* out, int arr_len, int win_len, int order,
       }
       break;
       case WRAP:
-      arr_len_thresh = arr_len - 1;
       for (i=0; i < win_len; i++){
       MediatorInsert(m, in[i]);
       out[lim2 + i] = m->data[m->heap[0]];

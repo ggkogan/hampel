@@ -11,6 +11,9 @@ class Mode(enum.Enum):
     nearest = 3
     mirror = 4
     wrap = 5
+    # grid-mirror = 1
+    # grid-constant = 2
+    # grid-wrap = 5
 
 
 def median_filter(x: np.array, kernel_size: int, mode='reflect', cval=0):
