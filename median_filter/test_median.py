@@ -1,8 +1,10 @@
 import numpy as np
 from scipy import ndimage
+import sys
+sys.path.append('../../scipy')
+from scipy_suggest import ndimage as ndimage_new
 from median_filter import median_filter
 import time
-import pathlib
 
 import matplotlib.pyplot as plt
 
@@ -25,7 +27,6 @@ if __name__ == "__main__":
     x_test += spikes
 
     n_tests = 101
-
     kernel_sizes = np.arange(1, 53, 2)
     ratio = np.empty(kernel_sizes.size)
     for i_size, kernel_size in enumerate(kernel_sizes):
@@ -41,6 +42,12 @@ if __name__ == "__main__":
         ratio[i_size] = time_current / time_new
         assert np.all(median_ref == median)
 
+        for mode in ['constant', 'nearest', 'mirror', 'wrap']:
+            median_ref = ndimage.median_filter(x_test, kernel_size, mode=mode, cval=0)
+            median = median_filter(x_test, kernel_size, mode=mode, cval=0)
+            if not np.all(median_ref == median):
+                print(f"failed {mode} mode for kernel size of {kernel_size}")
+
     # plt.figure()
     # plt.grid()
     # plt.scatter(kernel_sizes, ratio)
@@ -49,15 +56,3 @@ if __name__ == "__main__":
     # plt.title('Computation time ratio [ndimage.median_filter/suggested]')
     # plt.axhline(1, linestyle='--', color='black')
     # plt.savefig(pathlib.Path(__file__).parent / 'time_ratio.png')
-
-    for mode in ['reflect', 'constant', 'nearest', 'mirror', 'wrap']:
-        # print(mode)
-        median_ref = ndimage.median_filter(x_test, kernel_size, mode=mode, cval=0)
-        median = median_filter(x_test, kernel_size, mode=mode, cval=0)
-        # plt.figure()
-        # plt.grid()
-        # plt.plot(median_ref)
-        # plt.plot(median)
-        # plt.show()
-        if not np.all(median_ref == median):
-            print(f"failed {mode} mode")
