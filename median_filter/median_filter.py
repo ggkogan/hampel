@@ -32,7 +32,7 @@ def median_filter(x: np.array, kernel_size: int, mode='reflect', cval=0):
     ]
     x_out = np.empty_like(x)
     mode_enum = Mode[mode]
-    median_filter_c(x, x_out, x.size, kernel_size, kernel_size // 2 + 1, mode_enum.value, cval)
+    median_filter_c(x, x_out, x.size, kernel_size, kernel_size // 2, mode_enum.value, cval)
     return x_out
 
 

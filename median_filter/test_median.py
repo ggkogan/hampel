@@ -28,7 +28,7 @@ if __name__ == "__main__":
     x_test += spikes
 
     n_tests = 101
-    kernel_sizes = np.arange(1, 53, 2)
+    kernel_sizes = np.arange(3, 51)
     ratio = np.empty(kernel_sizes.size)
     for i_size, kernel_size in enumerate(kernel_sizes):
         t = time.time()

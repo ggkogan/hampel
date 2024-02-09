@@ -95,11 +95,11 @@ Mediator* MediatorNew(int nItems, int order)
    Mediator* m =  malloc(size);
    m->data= (Item*)(m+1);
    m->pos = (int*) (m->data+nItems);
-   m->heap = m->pos+nItems + (nItems/2); //points to middle of storage.
+   m->heap = m->pos+nItems + order + 1; //points to middle of storage.
    m->N = nItems;
    m->idx = 0;
-   m->minCt = order - 1;
-   m->maxCt = nItems - order;
+   m->minCt = nItems - order - 1;
+   m->maxCt = order;
    while (nItems--)  //set up initial heap fill pattern: median,max,min,max,...
    {
       m->data[nItems] = 0;
@@ -214,12 +214,15 @@ void median_filter(double* in, double* out, int arr_len, int win_len, int order,
 
 int main()
 {
-   double in[] = {-3.05559757, -2.99335285, -2.99335285, -2.89569811, -2.86275085};
-   double out[] = {0, 0, 0, 0, 0};
-   int arr_len = 5;
-   int win_len = 3;
+   double in[] = {
+      2.36856227, -3.05559757, -2.99335285, -2.86275085, -2.89569811, 
+      -3.17579574, -2.97867353, -3.08443298, -3.07523455, -3.01946883
+      };
+   double out[10];
+   int arr_len = 10;
+   int win_len = 2;
    int order = 1;
-   Mode mode = MIRROR;
+   Mode mode = REFLECT;
    double cval = 0;
    median_filter(in, out, arr_len, win_len, order, mode, cval);
    return 1;
