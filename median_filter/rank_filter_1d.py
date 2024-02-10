@@ -17,11 +17,11 @@ class Mode(enum.Enum):
 
 
 def rank_filter_1d(x: np.array, order:int, kernel_size: int, mode='reflect', cval=0):
-    # cc -fPIC -shared -o _median_filter.so _median_filter.c
-    lib = ctypes.cdll.LoadLibrary(pathlib.Path(__file__).parent / "_median_filter.so")
-    median_filter_c = lib.median_filter
-    median_filter_c.restype = None
-    median_filter_c.argtypes = [
+    # cc -fPIC -shared -o _median_filter.so _rank_filter_1d.c
+    lib = ctypes.cdll.LoadLibrary(pathlib.Path(__file__).parent / "_rank_filter_1d.so")
+    rank_filter_c = lib.rank_filter
+    rank_filter_c.restype = None
+    rank_filter_c.argtypes = [
         ndpointer(ctypes.c_double, flags="C_CONTIGUOUS"),
         ndpointer(ctypes.c_double, flags="C_CONTIGUOUS"),
         ctypes.c_size_t,
@@ -32,7 +32,7 @@ def rank_filter_1d(x: np.array, order:int, kernel_size: int, mode='reflect', cva
     ]
     x_out = np.empty_like(x)
     mode_enum = Mode[mode]
-    median_filter_c(x, x_out, x.size, kernel_size, order, mode_enum.value, cval)
+    rank_filter_c(x, x_out, x.size, kernel_size, order, mode_enum.value, cval)
     return x_out
 
 

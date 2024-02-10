@@ -1,16 +1,17 @@
 //Copyright (c) 2011 ashelly.myopenid.com under <http://w...content-available-to-author-only...e.org/licenses/mit-license>
-// I optimized by restriction of cases and proper initialization
+// I optimized by restriction of cases and proper initialization, also adapted for rank filter rather than the original
+//median filter.
 
 #include <stdlib.h>
 #include <stdio.h>
 #define inline
  
 typedef double Item;
-typedef struct Mediator_t
+typedef struct Mediator_t//this is used for rank keeping
 {
    Item* data;  //circular queue of values
    int*  pos;   //index into `heap` for each value
-   int*  heap;  //max/median/min heap holding indexes into `data`.
+   int*  heap;  //max/rank/min heap holding indexes into `data`.
    int   N;     //allocated size.
    int   idx;   //position in circular queue
    int   minCt; //count of items in min heap
@@ -68,16 +69,16 @@ void maxSortDown(Mediator* m, int i)
    }
 }
  
-//maintains minheap property for all items above i, including median
-//returns true if median changed
+//maintains minheap property for all items above i, including the rank
+//returns true if rank changed
 inline int minSortUp(Mediator* m, int i)
 {
    while (i>0 && mmCmpExch(m,i,i/2)) i/=2;
    return (i==0);
 }
  
-//maintains maxheap property for all items above i, including median
-//returns true if median changed
+//maintains maxheap property for all items above i, including rank
+//returns true if rank changed
 inline int maxSortUp(Mediator* m, int i)
 {
    while (i<0 && mmCmpExch(m,i/2,i))  i/=2;
@@ -87,7 +88,7 @@ inline int maxSortUp(Mediator* m, int i)
 /*--- Public Interface ---*/
  
  
-//creates new Mediator: to calculate `nItems` running median. 
+//creates new Mediator: to calculate `nItems` running rank.
 //mallocs single block of memory, caller must free.
 Mediator* MediatorNew(int nItems, int order)
 {
@@ -95,12 +96,12 @@ Mediator* MediatorNew(int nItems, int order)
    Mediator* m =  malloc(size);
    m->data= (Item*)(m+1);
    m->pos = (int*) (m->data+nItems);
-   m->heap = m->pos+nItems + order + 1; //points to middle of storage.
+   m->heap = m->pos+nItems + order + 1; //points to rank
    m->N = nItems;
    m->idx = 0;
    m->minCt = nItems - order - 1;
    m->maxCt = order;
-   while (nItems--)  //set up initial heap fill pattern: median,max,min,max,...
+   while (nItems--)
    {
       m->data[nItems] = 0;
       m->pos[nItems]= nItems - order;
@@ -110,7 +111,7 @@ Mediator* MediatorNew(int nItems, int order)
 }
  
  
-//Inserts item, maintains median in O(lg nItems)
+//Inserts item, maintains rank in O(lg nItems)
 void MediatorInsert(Mediator* m, Item v)
 {
    int p = m->pos[m->idx];
@@ -127,14 +128,14 @@ void MediatorInsert(Mediator* m, Item v)
    {  if (v<old) { maxSortDown(m,p); return; }
       if (maxSortUp(m,p) && mmCmpExch(m,1,0)) { minSortDown(m,1); }
    }
-   else //new item is at median
+   else //new item is at rank
    {  if (maxSortUp(m,-1)) { maxSortDown(m,-1); }
       if (minSortUp(m, 1)) { minSortDown(m, 1); }
    }
 }
  
 
-void median_filter(double* in, double* out, int arr_len, int win_len, int order, Mode mode, double cval)
+void rank_filter(double* in, double* out, int arr_len, int win_len, int order, Mode mode, double cval)
 {
    int i, arr_len_thresh, lim = (win_len - 1) / 2;
    int lim2 = arr_len - lim;
@@ -225,6 +226,6 @@ int main()
    int order = 1;
    Mode mode = REFLECT;
    double cval = 0;
-   median_filter(in, out, arr_len, win_len, order, mode, cval);
+   rank_filter(in, out, arr_len, win_len, order, mode, cval);
    return 1;
 }

@@ -75,5 +75,5 @@ if __name__ == "__main__":
     ax.set_ylabel('Kernel size')
     ax.set_title(f'Running time ratio [ndimage.rank_filter/suggested]\nbased on mean value of {n_tests} runs')
     fig.colorbar(c, ax=ax)
-
-    plt.savefig(pathlib.Path(__file__).parent / 'time_ratio_rank_filter.png')
+    if n_tests >= 21:
+        plt.savefig(pathlib.Path(__file__).parent / 'time_ratio_rank_filter.png')
