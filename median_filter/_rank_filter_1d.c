@@ -144,21 +144,20 @@ void rank_filter(double* in, double* out, int arr_len, int win_len, int order, M
 
    switch (mode)
    {
-      // -------------------loks wrong!!!!--------------------
       case REFLECT:
-      for (i=win_len - 1; i >-1; i--){MediatorInsert(m, in[i]);}
+      for (i=win_len - lim - 1; i >-1; i--){MediatorInsert(m, in[i]);}
       break;
       case CONSTANT:
-      for (i=win_len - 1; i >-1; i--){MediatorInsert(m, cval);}
+      for (i=win_len - lim; i >0; i--){MediatorInsert(m, cval);}
       break;
       case NEAREST:
-      for (i=win_len - 1; i >-1; i--){MediatorInsert(m, in[0]);}
+      for (i=win_len - lim; i >0; i--){MediatorInsert(m, in[0]);}
       break;
       case MIRROR:
-      for (i=win_len - 1; i > 0; i--){MediatorInsert(m, in[i]);}
+      for (i=win_len - lim; i > 0; i--){MediatorInsert(m, in[i]);}
       break;
       case WRAP:
-      for (i=arr_len - win_len; i < arr_len; i++){MediatorInsert(m, in[i]);}
+      for (i=arr_len - lim - 1; i < arr_len; i++){MediatorInsert(m, in[i]);}
       break;
    }
 
