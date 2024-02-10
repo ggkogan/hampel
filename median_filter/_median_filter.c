@@ -103,7 +103,7 @@ Mediator* MediatorNew(int nItems, int order)
    while (nItems--)  //set up initial heap fill pattern: median,max,min,max,...
    {
       m->data[nItems] = 0;
-      m->pos[nItems]= ((nItems+1)/2) * ((nItems&1)?-1:1);
+      m->pos[nItems]= nItems - order;
       m->heap[m->pos[nItems]]=nItems;
    }
    return m;
@@ -143,6 +143,7 @@ void median_filter(double* in, double* out, int arr_len, int win_len, int order,
 
    switch (mode)
    {
+      // -------------------loks wrong!!!!--------------------
       case REFLECT:
       for (i=win_len - 1; i >-1; i--){MediatorInsert(m, in[i]);}
       break;
@@ -220,7 +221,7 @@ int main()
       };
    double out[10];
    int arr_len = 10;
-   int win_len = 2;
+   int win_len = 4;
    int order = 1;
    Mode mode = REFLECT;
    double cval = 0;

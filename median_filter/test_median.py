@@ -2,7 +2,6 @@ import numpy as np
 from scipy import ndimage
 import sys
 sys.path.append('../../scipy')
-from scipy_suggest import ndimage as ndimage_new
 from median_filter import median_filter
 import time
 import pathlib
@@ -56,4 +55,4 @@ if __name__ == "__main__":
     plt.xlabel('Kernel size')
     plt.title('Computation time ratio [ndimage.median_filter/suggested]')
     plt.axhline(1, linestyle='--', color='black')
-    plt.savefig(pathlib.Path(__file__).parent / 'time_ratio.png')
+    plt.savefig(pathlib.Path(__file__).parent / 'time_ratio_median_filter.png')
