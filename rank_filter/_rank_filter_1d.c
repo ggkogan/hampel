@@ -135,9 +135,9 @@ void MediatorInsert(Mediator* m, Item v)
 }
  
 
-void rank_filter(double* in, double* out, int arr_len, int win_len, int order, Mode mode, double cval)
+void rank_filter(double* in, double* out, int arr_len, int win_len, int order, Mode mode, double cval, int origin)
 {
-   int i, arr_len_thresh, lim = (win_len - 1) / 2;
+   int i, arr_len_thresh, lim = (win_len - 1) / 2 - origin;
    int lim2 = arr_len - lim;
    double value;
    Mediator* m = MediatorNew(win_len, order);
@@ -145,24 +145,24 @@ void rank_filter(double* in, double* out, int arr_len, int win_len, int order, M
    switch (mode)
    {
       case REFLECT:
-      for (i=win_len - lim - 1; i >-1; i--){MediatorInsert(m, in[i]);}
+      for (i=win_len - lim - 1; i > - 1; i--){MediatorInsert(m, in[i]);}
       break;
       case CONSTANT:
-      for (i=win_len - lim; i >0; i--){MediatorInsert(m, cval);}
+      for (i=win_len - lim; i > 0; i--){MediatorInsert(m, cval);}
       break;
       case NEAREST:
-      for (i=win_len - lim; i >0; i--){MediatorInsert(m, in[0]);}
+      for (i=win_len - lim; i > 0; i--){MediatorInsert(m, in[0]);}
       break;
       case MIRROR:
       for (i=win_len - lim; i > 0; i--){MediatorInsert(m, in[i]);}
       break;
       case WRAP:
-      for (i=arr_len - lim - 1; i < arr_len; i++){MediatorInsert(m, in[i]);}
+      for (i=arr_len - lim - 1 - 2 * origin; i < arr_len; i++){MediatorInsert(m, in[i]);}
       break;
    }
 
    for (i=0; i < lim; i++){MediatorInsert(m, in[i]);}
-   for (i=lim; i<arr_len; i++)
+   for (i=lim; i < arr_len; i++)
    {
       value = in[i];
       MediatorInsert(m, in[i]);
@@ -172,14 +172,14 @@ void rank_filter(double* in, double* out, int arr_len, int win_len, int order, M
    {
       case REFLECT:
       arr_len_thresh = arr_len - 1;
-      for (i=0; i<lim; i++)
+      for (i=0; i < lim; i++)
       {
       MediatorInsert(m, in[arr_len_thresh - i]);
       out[lim2 + i] = m->data[m->heap[0]];
       }
       break;
       case CONSTANT:
-      for (i=0; i<lim; i++)
+      for (i=0; i < lim; i++)
       {
       MediatorInsert(m, cval);
       out[lim2 + i] = m->data[m->heap[0]];
@@ -187,7 +187,7 @@ void rank_filter(double* in, double* out, int arr_len, int win_len, int order, M
       break;
       case NEAREST:
       arr_len_thresh = arr_len - 1;
-      for (i=0; i<lim; i++)
+      for (i=0; i < lim; i++)
       {
       MediatorInsert(m, in[arr_len_thresh]);
       out[lim2 + i] = m->data[m->heap[0]];
@@ -195,7 +195,7 @@ void rank_filter(double* in, double* out, int arr_len, int win_len, int order, M
       break;
       case MIRROR:
       arr_len_thresh = arr_len - 2;
-      for (i=0; i<lim + 1; i++)
+      for (i=0; i < lim + 1; i++)
       {
       MediatorInsert(m, in[arr_len_thresh - i]);
       out[lim2 + i] = m->data[m->heap[0]];
@@ -221,10 +221,11 @@ int main()
       };
    double out[10];
    int arr_len = 10;
-   int win_len = 4;
+   int win_len = 5;
    int order = 1;
-   Mode mode = REFLECT;
+   int origin = 1;
+   Mode mode = WRAP;
    double cval = 0;
-   rank_filter(in, out, arr_len, win_len, order, mode, cval);
+   rank_filter(in, out, arr_len, win_len, order, mode, cval, origin);
    return 1;
 }

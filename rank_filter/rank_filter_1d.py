@@ -16,8 +16,8 @@ class Mode(enum.Enum):
     # grid-wrap = 5
 
 
-def rank_filter_1d(x: np.array, order:int, kernel_size: int, mode='reflect', cval=0):
-    # cc -fPIC -shared -o _median_filter.so _rank_filter_1d.c
+def rank_filter_1d(x: np.array, order:int, size: int, mode='reflect', cval=0, origin=0):
+    # cc -fPIC -shared -o _rank_filter_1d.so _rank_filter_1d.c
     lib = ctypes.cdll.LoadLibrary(pathlib.Path(__file__).parent / "_rank_filter_1d.so")
     rank_filter_c = lib.rank_filter
     rank_filter_c.restype = None
@@ -28,11 +28,12 @@ def rank_filter_1d(x: np.array, order:int, kernel_size: int, mode='reflect', cva
         ctypes.c_int,
         ctypes.c_int,
         ctypes.c_int,
-        ctypes.c_double
+        ctypes.c_double,
+        ctypes.c_int
     ]
     x_out = np.empty_like(x)
     mode_enum = Mode[mode]
-    rank_filter_c(x, x_out, x.size, kernel_size, order, mode_enum.value, cval)
+    rank_filter_c(x, x_out, x.size, size, order, mode_enum.value, cval, origin)
     return x_out
 
 

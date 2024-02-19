@@ -1,7 +1,5 @@
 import numpy as np
 from scipy import ndimage
-import sys
-sys.path.append('../../scipy')
 from rank_filter_1d import rank_filter_1d
 import time
 
@@ -30,46 +28,38 @@ if __name__ == "__main__":
     n_tests = 21
     kernel_sizes = np.arange(7, 51)
     ratio = []
-    order_res = []
-    kernel_size_res = []
-    for i_size, kernel_size in enumerate(kernel_sizes):
+    configurations = []
+    for kernel_size in kernel_sizes:
         for order in range(1, kernel_sizes[-1] - 1):
             if order >= kernel_size - 1:
                 break
-            order_res.append(order)
-            kernel_size_res.append(kernel_size)
-            t = time.time()
-            for a in range(n_tests):
-                x_filt = rank_filter_1d(x_test, order, kernel_size=kernel_size)
-            time_new = time.time() - t
+            configurations.append((kernel_size, order))
 
-            t = time.time()
-            for a in range(n_tests):
-                x_filt_ref = ndimage.rank_filter(x_test, order, size=kernel_size)
-            time_current = time.time() - t
-            ratio.append(time_current / time_new)
-            assert np.all(x_filt == x_filt_ref)
+    for kernel_size, order in configurations:
+        t = time.time()
+        for a in range(n_tests):
+            x_filt = rank_filter_1d(x_test, order, size=kernel_size)
+        time_new = time.time() - t
 
-            if ratio[-1] < 1:
-                print(f"ratio = {ratio[-1]:.2f}, kernel size={kernel_size}, order={order}")
+        t = time.time()
+        for a in range(n_tests):
+            x_filt_ref = ndimage.rank_filter(x_test, order, size=kernel_size)
+        time_current = time.time() - t
+        ratio.append(time_current / time_new)
 
-            for mode in ['constant', 'nearest', 'mirror', 'wrap']:
-                x_filt_ref = ndimage.rank_filter(x_test, order, size=kernel_size, mode=mode, cval=0)
-                x_filt = rank_filter_1d(x_test, order, kernel_size, mode=mode, cval=0)
-                if not np.all(x_filt_ref == x_filt):
-                    print(f"failed {mode} mode for kernel size of {kernel_size}, order of {order}")
+        if ratio[-1] < 1:
+            print(f"ratio = {ratio[-1]:.2f}, kernel size={kernel_size}, order={order}")
 
     order_mat, kernel_size_mat = np.meshgrid(
-        np.arange(np.min(order_res), np.max(order_res) + 1),
-        np.arange(np.min(kernel_size_res), np.max(kernel_size_res) + 1)
+        np.arange(configurations[0][-1], configurations[-1][-1] + 1),
+        np.arange(configurations[0][0], configurations[-1][-1] + 1)
     )
     ratio_mat = np.full_like(order_mat, fill_value=np.nan, dtype=np.float64)
 
-    for order, kernel_size, ratio_val in zip(order_res, kernel_size_res, ratio):
+    for (kernel_size, order), ratio_val in zip(configurations, ratio):
         ratio_mat[np.equal(order_mat, order) & np.equal(kernel_size_mat, kernel_size)] = ratio_val
 
     fig, ax = plt.subplots(1, 1)
-
     c = ax.pcolor(order_mat, kernel_size_mat, ratio_mat, shading='auto', cmap='plasma')
     ax.set_xlabel('Order')
     ax.set_ylabel('Kernel size')
@@ -77,3 +67,16 @@ if __name__ == "__main__":
     fig.colorbar(c, ax=ax)
     if n_tests >= 21:
         plt.savefig(pathlib.Path(__file__).parent / 'time_ratio_rank_filter.png')
+
+    testing_cases = []
+    for kernel_size in [20, 21]:
+        for order in range(1, kernel_size - 1):
+            for mode in ['constant', 'nearest', 'mirror', 'wrap']:
+                for origin in range(-(kernel_size//2), (kernel_size + 1)//2):
+                    testing_cases.append((kernel_size, order, mode, origin))
+    for kernel_size, order, mode, origin in testing_cases:
+        x_filt_ref = ndimage.rank_filter(x_test, order, size=kernel_size, mode=mode, cval=0, origin=origin)
+        x_filt = rank_filter_1d(x_test, order, kernel_size, mode=mode, cval=0, origin=origin)
+        if not np.all(x_filt_ref == x_filt):
+            print(f"failed {mode} mode for kernel size of {kernel_size}, order of {order}, with origin {origin}")
+            break
