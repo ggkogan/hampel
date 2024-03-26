@@ -4,7 +4,6 @@ from numpy.ctypeslib import ndpointer
 import pathlib
 import enum
 
-
 class Mode(enum.Enum):
     reflect = 1
     constant = 2
@@ -15,6 +14,37 @@ class Mode(enum.Enum):
     # grid-constant = 2
     # grid-wrap = 5
 
+dtype_fun_mapping = {
+    'float64' : 'rank_filter_double',
+    'float32' : 'rank_filter_float',
+    'longdouble' : 'rank_filter_long_double',
+    'ulonglong': 'rank_filter_unsigned_long_long',
+    'longlong': 'rank_filter_long_long',
+    'uint': 'rank_filter_unsigned_int',
+    'int64': 'rank_filter_int64',
+    'uint32': 'rank_filter_uint32',
+    'uint16': 'rank_filter_uint16',
+    'int16': 'rank_filter_int16',
+    'uint8': 'rank_filter_unsigned_char',
+    'int8': 'rank_filter_signed_char',
+    'bool_': 'rank_filter_bool',
+}
+
+dtype_numpy_c_mapping = {
+    'float64': ctypes.c_double,
+    'float32': ctypes.c_float,
+    'longdouble': ctypes.c_longdouble,
+    'ulonglong': ctypes.c_ulonglong,
+    'longlong': ctypes.c_longlong,
+    'uint': ctypes.c_uint,
+    'int64': ctypes.c_long,
+    'uint32': ctypes.c_uint,
+    'uint16': ctypes.c_ushort,
+    'int16': ctypes.c_short,
+    'uint8': ctypes.c_ubyte,
+    'int8': ctypes.c_byte,
+    'bool_': ctypes.c_bool,
+}
 
 def rank_filter_1d(x: np.array, order:int, size: int, mode='reflect', cval=0, origin=0):
     # cc -fPIC -shared -o _rank_filter_1d.so _rank_filter_1d.c
@@ -35,48 +65,25 @@ def rank_filter_1d(x: np.array, order:int, size: int, mode='reflect', cval=0, or
     mode_enum = Mode[mode]
     rank_filter_c(x, x_out, x.size, size, order, mode_enum.value, cval, origin)
     return x_out
-
-
-def rank_filter_1d_double(x: np.array, order:int, size: int, mode='reflect', cval=0, origin=0):
-    # cc -fPIC -shared -o _rank_filter_1d_cpp.so _rank_filter_1d.cpp
+def rank_filter_1d_(x: np.array, order:int, size: int, mode='reflect', cval=0, origin=0):
+    # cc -O1 -fPIC -shared -o _rank_filter_1d_cpp.so _rank_filter_1d.cpp
     lib = ctypes.cdll.LoadLibrary(pathlib.Path(__file__).parent / "_rank_filter_1d_cpp.so")
-    rank_filter_double = lib.rank_filter_double
-    rank_filter_double.restype = None
-    rank_filter_double.argtypes = [
-        ndpointer(ctypes.c_double, flags="C_CONTIGUOUS"),
-        ndpointer(ctypes.c_double, flags="C_CONTIGUOUS"),
+    rank_filter = lib.__getattr__(dtype_fun_mapping[x.dtype.name])
+    rank_filter.restype = None
+    rank_filter.argtypes = [
+        ndpointer(dtype_numpy_c_mapping[x.dtype.name], flags="C_CONTIGUOUS"),
+        ndpointer(dtype_numpy_c_mapping[x.dtype.name], flags="C_CONTIGUOUS"),
         ctypes.c_size_t,
         ctypes.c_int,
         ctypes.c_int,
         ctypes.c_int,
-        ctypes.c_double,
+        dtype_numpy_c_mapping[x.dtype.name],
         ctypes.c_int
     ]
     x_out = np.empty_like(x)
     mode_enum = Mode[mode]
-    rank_filter_double(x, x_out, x.size, size, order, mode_enum.value, cval, origin)
+    rank_filter(x, x_out, x.size, size, order, mode_enum.value, cval, origin)
     return x_out
-
-def rank_filter_1d_float(x: np.array, order:int, size: int, mode='reflect', cval=0, origin=0):
-    # cc -fPIC -shared -o _rank_filter_1d_cpp.so _rank_filter_1d.cpp
-    lib = ctypes.cdll.LoadLibrary(pathlib.Path(__file__).parent / "_rank_filter_1d_cpp.so")
-    rank_filter_float = lib.rank_filter_float
-    rank_filter_float.restype = None
-    rank_filter_float.argtypes = [
-        ndpointer(ctypes.c_float, flags="C_CONTIGUOUS"),
-        ndpointer(ctypes.c_float, flags="C_CONTIGUOUS"),
-        ctypes.c_size_t,
-        ctypes.c_int,
-        ctypes.c_int,
-        ctypes.c_int,
-        ctypes.c_float,
-        ctypes.c_int
-    ]
-    x_out = np.empty_like(x)
-    mode_enum = Mode[mode]
-    rank_filter_float(x, x_out, x.size, size, order, mode_enum.value, cval, origin)
-    return x_out
-
 
 if __name__ == 'main':
     pass

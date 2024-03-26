@@ -4,7 +4,7 @@
 
 #include <stdlib.h>
 #include <stdio.h>
-#define inline
+#include <cstdint>
  
 struct Mediator//this is used for rank keeping
 {
@@ -93,7 +93,6 @@ inline int maxSortUp(T* data, Mediator* m, int i)
  
  
 //creates new Mediator: to calculate `nItems` running rank.
-//mallocs single block of memory, caller must free.
 Mediator* MediatorNew(int nItems, int order)
 {
    Mediator* m =  (Mediator*)malloc(sizeof(Mediator));
@@ -112,7 +111,6 @@ Mediator* MediatorNew(int nItems, int order)
    return m;
 }
  
- 
 //Inserts item, maintains rank in O(lg nItems)
 template <typename T>
 void MediatorInsert(T* data, Mediator* m, T v)
@@ -123,11 +121,11 @@ void MediatorInsert(T* data, Mediator* m, T v)
    m->idx++;
    if(m->idx == m->N){m->idx = 0; }
 
-   if (p > 0)         //new item is in minHeap
+   if (p > 0) //new item is in minHeap
    {  if (v>old) { minSortDown(data, m, p); return; }
       if (minSortUp(data, m, p) && mmCmpExch(data, m, 0, -1)) { maxSortDown(data, m,-1); }
    }
-   else if (p < 0)   //new item is in maxheap
+   else if (p < 0) //new item is in maxheap
    {  if (v<old) {maxSortDown(data, m, p); return; }
       if (maxSortUp(data, m, p) && mmCmpExch(data, m, 1, 0)) { minSortDown(data, m, 1); }
    }
@@ -228,31 +226,43 @@ extern "C"
 void rank_filter_float(float* in, float* out, int arr_len, int win_len, int order, Mode mode, float cval, int origin){
    rank_filter(in, out, arr_len, win_len, order, mode, cval, origin);
 }
-int main()
-{
-   double in_double[] = {
-      2.36856227, -3.05559757, -2.99335285, -2.86275085, -2.89569811, 
-      -3.17579574, -2.97867353, -3.08443298, -3.07523455, -3.01946883
-      };
-   float in_float[] = {
-      2.36856227, -3.05559757, -2.99335285, -2.86275085, -2.89569811,
-      -3.17579574, -2.97867353, -3.08443298, -3.07523455, -3.01946883
-      };
-   int16_t in_int[] = {
-      236, -305, -299, -286, -289,
-      -317, -297, -308, -307, -301
-      };
-   double out_double[10];
-   float out_float[10];
-   int16_t out_int[10];
-   int arr_len = 10;
-   int win_len = 5;
-   int order = 1;
-   int origin = 1;
-   Mode mode = WRAP;
-   double cval = 0;
-   rank_filter_double(in_double, out_double, arr_len, win_len, order, mode, cval, origin);
-   //rank_filter(in_int, out_int, arr_len, win_len, order, mode, (int)cval, origin);
-   //for (int i = 0; i < arr_len; i++){printf("%d\n", out_int[i]);}
-   return 1;
+extern "C"
+void rank_filter_long_double(long double* in, long double* out, int arr_len, int win_len, int order, Mode mode, long double cval, int origin){
+   rank_filter(in, out, arr_len, win_len, order, mode, cval, origin);
+}
+extern "C"
+void rank_filter_unsigned_long(unsigned long* in, unsigned long* out, int arr_len, int win_len, int order, Mode mode, unsigned long cval, int origin){
+   rank_filter(in, out, arr_len, win_len, order, mode, cval, origin);
+}
+extern "C"
+void rank_filter_int64(int64_t* in, int64_t* out, int arr_len, int win_len, int order, Mode mode, int64_t cval, int origin){
+   rank_filter(in, out, arr_len, win_len, order, mode, cval, origin);
+}
+extern "C"
+void rank_filter_uint32(uint32_t* in, uint32_t* out, int arr_len, int win_len, int order, Mode mode, uint32_t cval, int origin){
+   rank_filter(in, out, arr_len, win_len, order, mode, cval, origin);
+}
+extern "C"
+void rank_filter_int(int* in, int* out, int arr_len, int win_len, int order, Mode mode, int cval, int origin){
+   rank_filter(in, out, arr_len, win_len, order, mode, cval, origin);
+}
+extern "C"
+void rank_filter_uint16(uint16_t* in, uint16_t* out, int arr_len, int win_len, int order, Mode mode, uint16_t cval, int origin){
+   rank_filter(in, out, arr_len, win_len, order, mode, cval, origin);
+}
+extern "C"
+void rank_filter_int16(int16_t* in, int16_t* out, int arr_len, int win_len, int order, Mode mode, int16_t cval, int origin){
+   rank_filter(in, out, arr_len, win_len, order, mode, cval, origin);
+}
+extern "C"
+void rank_filter_uint8(uint8_t* in, uint8_t* out, int arr_len, int win_len, int order, Mode mode, uint8_t cval, int origin){
+   rank_filter(in, out, arr_len, win_len, order, mode, cval, origin);
+}
+extern "C"
+void rank_filter_int8(int8_t* in, int8_t* out, int arr_len, int win_len, int order, Mode mode, int8_t cval, int origin){
+   rank_filter(in, out, arr_len, win_len, order, mode, cval, origin);
+}
+extern "C"
+void rank_filter_bool(bool* in, bool* out, int arr_len, int win_len, int order, Mode mode, bool cval, int origin){
+   rank_filter(in, out, arr_len, win_len, order, mode, cval, origin);
 }
