@@ -25,8 +25,17 @@ if __name__ == "__main__":
     spikes[::impulse_intervals] = np.random.normal(scale=3, size=spikes[::impulse_intervals].size)
     x_test += spikes
 
+    supported_dtypes = []
+    for general_type, specific_types in np.sctypes.items():
+        if general_type not in ['int', 'uint', 'float']:
+            continue
+        for specific_type in specific_types:
+            if specific_type.__name__=='float16':
+                continue
+            supported_dtypes.append(specific_type)
+
     n_tests = 21
-    kernel_sizes = np.arange(7, 51)
+    kernel_sizes = np.arange(3, 21)
     ratio = []
     configurations = []
     for kernel_size in kernel_sizes:
@@ -36,6 +45,17 @@ if __name__ == "__main__":
             configurations.append((kernel_size, order))
 
     for kernel_size, order in configurations:
+        print(f"Testing kernel size of {kernel_size} and order of {order}")
+        for specific_type in supported_dtypes:
+            x_test_ = (x_test * 100).astype(specific_type.__name__)
+            x_filt = rank_filter_1d(x_test_, order, size=kernel_size)
+            if specific_type.__name__ == 'longdouble':
+                #print('skipping reference test for longdouble - not supported by the original function')
+                continue
+            x_filt_ref = ndimage.rank_filter(x_test_, order, size=kernel_size)
+            if not np.all(x_filt == x_filt_ref) and specific_type.__name__ != 'uint64':
+                print(f"failed for kernel size of {kernel_size}, order of {order}, data type {specific_type.__name__}")
+
         t = time.time()
         for a in range(n_tests):
             x_filt = rank_filter_1d(x_test, order, size=kernel_size)

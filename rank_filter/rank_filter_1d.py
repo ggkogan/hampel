@@ -51,7 +51,7 @@ dtype_numpy_c_mapping = {
     'int8': ctypes.c_byte,
     'bool_': ctypes.c_bool,
 }
-
+'''
 def rank_filter_1d(x: np.array, order:int, size: int, mode='reflect', cval=0, origin=0):
     # cc -fPIC -shared -o _rank_filter_1d.so _rank_filter_1d.c
     lib = ctypes.cdll.LoadLibrary(pathlib.Path(__file__).parent / "_rank_filter_1d.so")
@@ -71,9 +71,10 @@ def rank_filter_1d(x: np.array, order:int, size: int, mode='reflect', cval=0, or
     mode_enum = Mode[mode]
     rank_filter_c(x, x_out, x.size, size, order, mode_enum.value, cval, origin)
     return x_out
-def rank_filter_1d_(x: np.array, order:int, size: int, mode='reflect', cval=0, origin=0):
-    # cc -O1 -fPIC -shared -o _rank_filter_1d_cpp.so _rank_filter_1d.cpp
-    lib = ctypes.cdll.LoadLibrary(pathlib.Path(__file__).parent / "_rank_filter_1d_cpp.so")
+'''
+def rank_filter_1d(x: np.array, order:int, size: int, mode='reflect', cval=0, origin=0):
+    # cc -O1 -fPIC -shared -o _rank_filter_1d.so _rank_filter_1d.cpp
+    lib = ctypes.cdll.LoadLibrary(pathlib.Path(__file__).parent / "_rank_filter_1d.so")
     rank_filter = lib.__getattr__(dtype_fun_mapping[x.dtype.name])
     rank_filter.restype = None
     rank_filter.argtypes = [
