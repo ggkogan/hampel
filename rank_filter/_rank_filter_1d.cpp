@@ -94,20 +94,20 @@ inline int maxSortUp(T* data, Mediator* m, int i)
  
  
 //creates new Mediator: to calculate `nItems` running rank.
-Mediator* MediatorNew(int nItems, int order)
+Mediator* MediatorNew(int nItems, int rank)
 {
    Mediator* m =  (Mediator*)malloc(sizeof(Mediator));
    m->pos = (int*)malloc(sizeof(int) * nItems);
    m->heap = (int*)malloc(sizeof(int) * nItems);
    if ((m == nullptr)||(m->pos == nullptr)||(m->heap == nullptr)){printf("out of memory\n"); exit(1);}
-   m->heap += order; //points to rank
+   m->heap += rank; //points to rank
    m->N = nItems;
    m->idx = 0;
-   m->minCt = nItems - order - 1;
-   m->maxCt = order;
+   m->minCt = nItems - rank - 1;
+   m->maxCt = rank;
    while (nItems--)
    {
-      m->pos[nItems]= nItems - order;
+      m->pos[nItems]= nItems - rank;
       m->heap[m->pos[nItems]]=nItems;
    }
    return m;
@@ -138,38 +138,37 @@ void MediatorInsert(T* data, Mediator* m, T v)
 }
  
 template <typename T>
-void rank_filter(T* in, T* out, int arr_len, int win_len, int order, Mode mode, T cval, int origin)
+void rank_filter(T* in_arr, int rank, int arr_len, int win_len, T* out_arr, int mode, T cval, int origin)
 {
    int i, arr_len_thresh, lim = (win_len - 1) / 2 - origin;
    int lim2 = arr_len - lim;
-   T value;
-   Mediator* m = MediatorNew(win_len, order);
+   Mediator* m = MediatorNew(win_len, rank);
    T* data = (T*)malloc(sizeof(T) * win_len);
 
    switch (mode)
    {
       case REFLECT:
-      for (i=win_len - lim - 1; i > - 1; i--){MediatorInsert(data, m, in[i]);}
+      for (i=win_len - lim - 1; i > - 1; i--){MediatorInsert(data, m, in_arr[i]);}
       break;
       case CONSTANT:
       for (i=win_len - lim; i > 0; i--){MediatorInsert(data, m, cval);}
       break;
       case NEAREST:
-      for (i=win_len - lim; i > 0; i--){MediatorInsert(data, m, in[0]);}
+      for (i=win_len - lim; i > 0; i--){MediatorInsert(data, m, in_arr[0]);}
       break;
       case MIRROR:
-      for (i=win_len - lim; i > 0; i--){MediatorInsert(data, m, in[i]);}
+      for (i=win_len - lim; i > 0; i--){MediatorInsert(data, m, in_arr[i]);}
       break;
       case WRAP:
-      for (i=arr_len - lim - 1 - 2 * origin; i < arr_len; i++){MediatorInsert(data, m, in[i]);}
+      for (i=arr_len - lim - 1 - 2 * origin; i < arr_len; i++){MediatorInsert(data, m, in_arr[i]);}
       break;
    }
 
-   for (i=0; i < lim; i++){MediatorInsert(data, m, in[i]);}
+   for (i=0; i < lim; i++){MediatorInsert(data, m, in_arr[i]);}
    for (i=lim; i < arr_len; i++)
    {
-      MediatorInsert(data, m, in[i]);
-      out[i - lim] = data[m->heap[0]];
+      MediatorInsert(data, m, in_arr[i]);
+      out_arr[i - lim] = data[m->heap[0]];
    }
    switch (mode)
    {
@@ -177,42 +176,42 @@ void rank_filter(T* in, T* out, int arr_len, int win_len, int order, Mode mode, 
       arr_len_thresh = arr_len - 1;
       for (i=0; i < lim; i++)
       {
-      MediatorInsert(data, m, in[arr_len_thresh - i]);
-      out[lim2 + i] = data[m->heap[0]];
+      MediatorInsert(data, m, in_arr[arr_len_thresh - i]);
+      out_arr[lim2 + i] = data[m->heap[0]];
       }
       break;
       case CONSTANT:
       for (i=0; i < lim; i++)
       {
       MediatorInsert(data, m, cval);
-      out[lim2 + i] = data[m->heap[0]];
+      out_arr[lim2 + i] = data[m->heap[0]];
       }
       break;
       case NEAREST:
       arr_len_thresh = arr_len - 1;
       for (i=0; i < lim; i++)
       {
-      MediatorInsert(data, m, in[arr_len_thresh]);
-      out[lim2 + i] = data[m->heap[0]];
+      MediatorInsert(data, m, in_arr[arr_len_thresh]);
+      out_arr[lim2 + i] = data[m->heap[0]];
       }
       break;
       case MIRROR:
       arr_len_thresh = arr_len - 2;
       for (i=0; i < lim + 1; i++)
       {
-      MediatorInsert(data, m, in[arr_len_thresh - i]);
-      out[lim2 + i] = data[m->heap[0]];
+      MediatorInsert(data, m, in_arr[arr_len_thresh - i]);
+      out_arr[lim2 + i] = data[m->heap[0]];
       }
       break;
       case WRAP:
       for (i=0; i < win_len; i++){
-      MediatorInsert(data, m, in[i]);
-      out[lim2 + i] = data[m->heap[0]];
+      MediatorInsert(data, m, in_arr[i]);
+      out_arr[lim2 + i] = data[m->heap[0]];
       }
       break;
    }
 
-   m->heap -= order;
+   m->heap -= rank;
    free(m->heap);
    m->heap = nullptr;
    free(m->pos);
@@ -222,6 +221,7 @@ void rank_filter(T* in, T* out, int arr_len, int win_len, int order, Mode mode, 
    free(data);
    data = nullptr;
 }
+/*
 extern "C"
 void rank_filter_longdouble(long double* in, long double* out, int arr_len, int win_len, int order, Mode mode, long double cval, int origin){
    rank_filter(in, out, arr_len, win_len, order, mode, cval, origin);
@@ -295,8 +295,9 @@ int main()
    int64_t out[10] = {0};
    for (size_t i = 0; i < 10; i++){
       printf("%ld ", i);
-      rank_filter_int64(in, out, arr_len, win_len, order, mode, cval, origin);
+      rank_filter_int64(in_arr, out_arr, arr_len, win_len, order, mode, cval, origin);
    }
    return 0;
 }
+*/
 

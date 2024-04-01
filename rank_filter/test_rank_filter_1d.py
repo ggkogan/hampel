@@ -2,13 +2,10 @@ import numpy as np
 from scipy import ndimage
 from rank_filter_1d import rank_filter_1d
 import time
-
 import pathlib
 import matplotlib.pyplot as plt
 
-
 if __name__ == "__main__":
-    # demonstration of bit exact
     fs = 20000
     freq = 13.47
     impulse_intervals = 287
@@ -53,6 +50,8 @@ if __name__ == "__main__":
                 #print('skipping reference test for longdouble - not supported by the original function')
                 continue
             x_filt_ref = ndimage.rank_filter(x_test_, order, size=kernel_size)
+            # we exclude uint64 as the reference implementation has a bug:
+            # ndimage.rank_filter(np.arange(2**62, 2**62+10).astype('uint64'), 2, size=5) -> np.ones(10, dtype='uint64') * 2**62
             if not np.all(x_filt == x_filt_ref) and specific_type.__name__ != 'uint64':
                 print(f"failed for kernel size of {kernel_size}, order of {order}, data type {specific_type.__name__}")
 
