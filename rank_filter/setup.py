@@ -3,7 +3,7 @@ from setuptools.extension import Extension
 from Cython.Distutils import build_ext
 import numpy as np
 
-ext_modules = [Extension("rank_filter_1d_cython", ["rank_filter_1d_cython.pyx"],
+ext_modules = [Extension("rank_filter_1d", ["rank_filter_1d.pyx"],
                          include_dirs=[np.get_include()],
                          extra_compile_args=["-std=c++11", "-O1"],
                          language="c++")]

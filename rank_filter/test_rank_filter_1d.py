@@ -1,6 +1,6 @@
 import numpy as np
 from scipy import ndimage
-from rank_filter_1d import rank_filter_1d
+from rank_filter_1d import _rank_filter_1d
 import time
 import pathlib
 import matplotlib.pyplot as plt
@@ -45,7 +45,7 @@ if __name__ == "__main__":
         print(f"Testing kernel size of {kernel_size} and order of {order}")
         for specific_type in supported_dtypes:
             x_test_ = (x_test * 100).astype(specific_type.__name__)
-            x_filt = rank_filter_1d(x_test_, order, size=kernel_size)
+            x_filt = _rank_filter_1d(x_test_, order, size=kernel_size)
             if specific_type.__name__ == 'longdouble':
                 #print('skipping reference test for longdouble - not supported by the original function')
                 continue
@@ -57,7 +57,7 @@ if __name__ == "__main__":
 
         t = time.time()
         for a in range(n_tests):
-            x_filt = rank_filter_1d(x_test, order, size=kernel_size)
+            x_filt = _rank_filter_1d(x_test, order, size=kernel_size)
         time_new = time.time() - t
 
         t = time.time()
@@ -95,7 +95,7 @@ if __name__ == "__main__":
                     testing_cases.append((kernel_size, order, mode, origin))
     for kernel_size, order, mode, origin in testing_cases:
         x_filt_ref = ndimage.rank_filter(x_test, order, size=kernel_size, mode=mode, cval=0, origin=origin)
-        x_filt = rank_filter_1d(x_test, order, kernel_size, mode=mode, cval=0, origin=origin)
+        x_filt = _rank_filter_1d(x_test, order, kernel_size, mode=mode, cval=0, origin=origin)
         if not np.all(x_filt_ref == x_filt):
             print(f"failed {mode} mode for kernel size of {kernel_size}, order of {order}, with origin {origin}")
             break
