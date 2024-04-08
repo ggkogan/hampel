@@ -5,8 +5,7 @@
 
 #include <stdlib.h>
 #include <stdio.h>
-#include <cstdint>
- 
+
 struct Mediator//this is used for rank keeping
 {
    int*  pos;   //index into `heap` for each value
