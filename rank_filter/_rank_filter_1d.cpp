@@ -1,10 +1,19 @@
-//Copyright (c) 2011 ashelly.myopenid.com under <http://w...content-available-to-author-only...e.org/licenses/mit-license>
-// Started working on https://ideone.com/8VVEa, I optimized by restriction of cases and proper initialization, 
-//also adapted for rank filter rather than the original median filter. Allowed different boundary conditons. 
-//Moved to C++ for polymorphism and added C interface for use in Python. 
+/*
+Started working on https://ideone.com/8VVEa (Copyright (c) 2011 ashelly.myopenid.com
+under <http://www.opensource.org/licenses/mit-license>),
+I optimized by restriction of cases and proper initialization,
+also adapted for rank filter rather than the original median filter.
+Allowed different boundary conditions.
+Moved to C++ for polymorphism and added C-Numpy API.
+*/
+
+#define NPY_NO_DEPRECATED_API NPY_1_7_API_VERSION
+#include "Python.h"
+#include "numpy/arrayobject.h"
 
 #include <stdlib.h>
 #include <stdio.h>
+
 
 struct Mediator//this is used for rank keeping
 {
@@ -17,22 +26,22 @@ struct Mediator//this is used for rank keeping
 };
 
 typedef enum {
-   REFLECT = 1,
-   CONSTANT = 2,
-   NEAREST = 3,
-   MIRROR = 4,
-   WRAP = 5
+   NEAREST = 0,
+   WRAP = 1,
+   REFLECT = 2,
+   MIRROR = 3,
+   CONSTANT = 4,
 } Mode;
- 
+
 /*--- Helper Functions ---*/
- 
+
 //returns 1 if heap[i] < heap[j]
 template <typename T>
 inline int mmless(T* data, Mediator* m, int i, int j)
 {
    return (data[m->heap[i]] < data[m->heap[j]]);
 }
- 
+
 //swaps items i&j in heap, maintains indexes
 int mmexchange(Mediator* m, int i, int j)
 {
@@ -43,14 +52,14 @@ int mmexchange(Mediator* m, int i, int j)
    m->pos[m->heap[j]] = j;
    return 1;
 }
- 
+
 //swaps items i & j if i < j;  returns true if swapped
 template <typename T>
 inline int mmCmpExch(T* data, Mediator* m, int i, int j)
 {
    return (mmless(data, m,i,j) && mmexchange(m,i,j));
 }
- 
+
 //maintains minheap property for all items below i.
 template <typename T>
 void minSortDown(T* data, Mediator* m, int i)
@@ -60,7 +69,7 @@ void minSortDown(T* data, Mediator* m, int i)
       if (!mmCmpExch(data, m, i, i/2)) { break; }
    }
 }
- 
+
 //maintains maxheap property for all items below i. (negative indexes)
 template <typename T>
 void maxSortDown(T* data, Mediator* m, int i)
@@ -70,7 +79,7 @@ void maxSortDown(T* data, Mediator* m, int i)
       if (!mmCmpExch(data, m, i/2, i)) { break; }
    }
 }
- 
+
 //maintains minheap property for all items above i, including the rank
 //returns true if rank changed
 template <typename T>
@@ -79,7 +88,7 @@ inline int minSortUp(T* data, Mediator* m, int i)
    while (i>0 && mmCmpExch(data, m, i, i/2)) i/=2;
    return (i==0);
 }
- 
+
 //maintains maxheap property for all items above i, including rank
 //returns true if rank changed
 template <typename T>
@@ -88,10 +97,10 @@ inline int maxSortUp(T* data, Mediator* m, int i)
    while (i<0 && mmCmpExch(data, m, i/2, i))  i/=2;
    return (i==0);
 }
- 
+
 /*--- Public Interface ---*/
- 
- 
+
+
 //creates new Mediator: to calculate `nItems` running rank.
 Mediator* MediatorNew(int nItems, int rank)
 {
@@ -111,7 +120,7 @@ Mediator* MediatorNew(int nItems, int rank)
    }
    return m;
 }
- 
+
 //Inserts item, maintains rank in O(lg nItems)
 template <typename T>
 void MediatorInsert(T* data, Mediator* m, T v)
@@ -135,9 +144,9 @@ void MediatorInsert(T* data, Mediator* m, T v)
       if (minSortUp(data, m, 1)) { minSortDown(data, m, 1); }
    }
 }
- 
+
 template <typename T>
-void rank_filter(T* in_arr, int rank, int arr_len, int win_len, T* out_arr, int mode, T cval, int origin)
+void _rank_filter(T* in_arr, int rank, int arr_len, int win_len, T* out_arr, int mode, T cval, int origin)
 {
    int i, arr_len_thresh, lim = (win_len - 1) / 2 - origin;
    int lim2 = arr_len - lim;
@@ -220,3 +229,77 @@ void rank_filter(T* in_arr, int rank, int arr_len, int win_len, T* out_arr, int 
    free(data);
    data = nullptr;
 }
+
+// Python wrapper for rank_filter
+static PyObject* rank_filter(PyObject* self, PyObject* args)
+{
+    PyObject *in_arr_obj, *out_arr_obj, *cval_obj;
+    int32_t rank, arr_len, win_len, mode, origin;
+    if (!PyArg_ParseTuple(args, "OiiOiOi", &in_arr_obj, &rank, &win_len, &out_arr_obj, &mode, &cval_obj, &origin))
+    {
+        return NULL;
+    }
+    PyArrayObject *in_arr = (PyArrayObject *)PyArray_FROM_OTF(in_arr_obj, NPY_NOTYPE, NPY_ARRAY_INOUT_ARRAY2);
+    PyArrayObject *out_arr = (PyArrayObject *)PyArray_FROM_OTF(out_arr_obj, NPY_NOTYPE, NPY_ARRAY_INOUT_ARRAY2);
+    arr_len = PyArray_SIZE(in_arr);
+    if (in_arr == NULL || out_arr == NULL)
+    {
+        return NULL;
+    }
+
+    int type = PyArray_TYPE(in_arr);
+    switch (type) { // the considered types are float, double, int64
+        case NPY_FLOAT:
+        {
+            float *c_in_arr = (float *)PyArray_DATA(in_arr);
+            float *c_out_arr = (float *)PyArray_DATA(out_arr);
+            float cval = (float)PyFloat_AsDouble(cval_obj);
+            _rank_filter(c_in_arr, rank, arr_len, win_len, c_out_arr, mode, cval, origin);
+            break;
+        }
+        case NPY_DOUBLE:
+        {
+            double *c_in_arr = (double *)PyArray_DATA(in_arr);
+            double *c_out_arr = (double *)PyArray_DATA(out_arr);
+            double cval = PyFloat_AsDouble(cval_obj);
+            _rank_filter(c_in_arr, rank, arr_len, win_len, c_out_arr, mode, cval, origin);
+            break;
+        }
+        case NPY_INT64:
+        {
+            int64_t *c_in_arr = (int64_t *)PyArray_DATA(in_arr);
+            int64_t *c_out_arr = (int64_t *)PyArray_DATA(out_arr);
+            int64_t cval = PyLong_AsLongLong(cval_obj);
+            _rank_filter(c_in_arr, rank, arr_len, win_len, c_out_arr, mode, cval, origin);
+            break;
+        }
+        default:
+            PyErr_SetString(PyExc_TypeError, "Unsupported array type");
+            break;
+    }
+    Py_DECREF(in_arr);
+    Py_DECREF(out_arr);
+    Py_RETURN_NONE;
+}
+
+//define the module methods
+static PyMethodDef myMethods[] = {
+    {"rank_filter", rank_filter, METH_VARARGS, "1D rank filter"},
+    {NULL, NULL, 0, NULL}};
+
+
+//define the module
+static struct PyModuleDef _rank_filter_1d = {
+    PyModuleDef_HEAD_INIT,
+    "_rank_filter_1d",
+    "1D rank filter module",
+    -1,
+    myMethods};
+
+//init the module
+PyMODINIT_FUNC PyInit__rank_filter_1d(void)
+{
+    import_array();
+    return PyModule_Create(&_rank_filter_1d);
+}
+
