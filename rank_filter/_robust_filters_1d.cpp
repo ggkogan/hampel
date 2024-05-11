@@ -35,10 +35,10 @@ typedef enum {
 
 /*--- Helper Functions ---*/
 
-Template <typename T>
+template <typename T>
 inline T filter_mad(T v, T median, T mad, T scale)
 {
-   if abs(v - median) > scale * mad
+   if (abs(v - median) > scale * mad)
    {
       return median;
    }
@@ -98,7 +98,7 @@ void maxSortDown(T* data, Mediator* m, int i)
 template <typename T>
 inline int minSortUp(T* data, Mediator* m, int i)
 {
-   while (i>0 && mmCmpExch(data, m, i, i/2)) i/=2;
+   while (i>0 && mmCmpExch(data, m, i, i/2)) {i/=2;};
    return (i==0);
 }
 
@@ -107,14 +107,17 @@ inline int minSortUp(T* data, Mediator* m, int i)
 template <typename T>
 inline int maxSortUp(T* data, Mediator* m, int i)
 {
-   while (i<0 && mmCmpExch(data, m, i/2, i))  i/=2;
+   while (i<0 && mmCmpExch(data, m, i/2, i)) {i/=2;};
    return (i==0);
 }
 
 inline void promoteIndex(Mediator* m)
 {
    m->idx++;
-   if (m->idx == m->N) {m->idx = 0;}
+   if (m->idx == m->N)
+   {
+        m->idx = 0;
+   }
 }
 /*--- Public Interface ---*/
 
@@ -178,13 +181,13 @@ void MediatorReplaceHampel(T* data, Mediator* m, Mediator* m_bottom, Mediator* m
    T old = data[m->idx];
    data[m->idx] = v;
 
-   promoteIndex(Mediator* m);
-   promoteIndex(Mediator* m_top);
-   promoteIndex(Mediator* m_bottom);
+   promoteIndex(m);
+   promoteIndex(m_top);
+   promoteIndex(m_bottom);
 
-   sortHeap(T* data, Mediator* m, T v, int p, T old);
-   sortHeap(T* data, Mediator* m_top, T v, int p_top, T old);
-   sortHeap(T* data, Mediator* m_bottom, T v, int p_bottom, T old);
+   sortHeap(data, m, v, p, old);
+   sortHeap(data, m_top, v, p_top, old);
+   sortHeap(data, m_bottom, v, p_bottom, old);
 }
 
 //Replaces item, maintains rank in O(lg nItems)
@@ -194,12 +197,13 @@ void MediatorReplaceRank(T* data, Mediator* m, T v)
    int p = m->pos[m->idx];
    T old = data[m->idx];
    data[m->idx] = v;
-   promoteIndex(Mediator* m);
-   sortHeap(T* data, Mediator* m, T v, int p, T old);
+   promoteIndex(m);
+   sortHeap(data, m, v, p, old);
 }
 
 // Mediator rank = rank - 1; in O(lg nItems)
-void rank_minus_1(Mediator* m)
+template <typename T>
+void rank_minus_1(Mediator* m, T* data)
 {
    m->heap[m->minCt + 1] = m->heap[-m->maxCt];
    m->pos[m->heap[m->minCt + 1]] = m->minCt + 1;
@@ -209,7 +213,8 @@ void rank_minus_1(Mediator* m)
 }
 
 // Mediator rank = rank + 1; in O(lg nItems)
-void rank_plus_1(Mediator* m)
+template <typename T>
+void rank_plus_1(Mediator* m, T* data)
 {
    m->heap[-m->maxCt - 1] = m->heap[m->minCt + 1];
    m->pos[m->heap[-m->maxCt - 1]] = -m->maxCt - 1;
@@ -219,23 +224,25 @@ void rank_plus_1(Mediator* m)
 }
 
 template <typename T>
-T get_mad(Mediator* m_top, Mediator* m_bottom, T median, const int win_len, const int half_wind_len_p_1, const int half_win_len_m_1)
+T get_mad(Mediator* m_top, Mediator* m_bottom, T median, T* data, const int win_len, const int half_wind_len_p, const int half_wind_len_m)
 {
-   T top_order_value, bottom_order_value, bottom_order_value_1, bottom_order_value_2;
+   T top_order_value, bottom_order_value, bottom_order_value_1, bottom_order_value_2, mad;
+   T top_order_value_1, top_order_value_2;
    T median_2 = 2 * median;
+   int half_win_m = (win_len - 1) / 2;
    bool mad_cond_1, mad_cond_2;
-   while true
+   while (true)
    {
       top_order_value = data[m_top->heap[0]];
       bottom_order_value = data[m_bottom->heap[0]];
       // the condition for the choice of the top/bottom order value for the calculation
       // of the MAD is producing a larger deviation.
-      if top_order_value + bottom_order_value >= median_2
+      if (top_order_value + bottom_order_value >= median_2)
       {
          bottom_order_value_1 = data[m_bottom->heap[-1]];
          mad_cond_1 = median_2 < top_order_value + bottom_order_value_1;
          //condition for no ability to reduce the order of the median-heaps
-         if m_top->maxCt == half_wind_len_p
+         if (m_top->maxCt == half_wind_len_p)
          {
             mad = mad_cond_1 ? median - bottom_order_value_1 : top_order_value - median;
             return mad;
@@ -243,10 +250,10 @@ T get_mad(Mediator* m_top, Mediator* m_bottom, T median, const int win_len, cons
          bottom_order_value_2 = data[m_bottom->heap[-2]];
          mad_cond_2 = median_2 < top_order_value + bottom_order_value_2;
          //condition for reduction of the order of both median heaps
-         if mad_cond_1 || mad_cond_2
+         if (mad_cond_1 || mad_cond_2)
          {
-            rank_minus_1(m_top);
-            rank_minus_1(m_bottom);
+            rank_minus_1(m_top, data);
+            rank_minus_1(m_bottom, data);
          }
          else
          {
@@ -259,7 +266,7 @@ T get_mad(Mediator* m_top, Mediator* m_bottom, T median, const int win_len, cons
          // value larger than top order
          top_order_value_1 = data[m_top->heap[1]];
          mad_cond_1 = top_order_value_1 + bottom_order_value < median_2;
-         if m_bottom->maxCt == half_win_m
+         if (m_bottom->maxCt == half_win_m)
          {
             mad = mad_cond_1 ? top_order_value_1 : median - bottom_order_value;
             return mad;
@@ -267,10 +274,10 @@ T get_mad(Mediator* m_top, Mediator* m_bottom, T median, const int win_len, cons
          top_order_value_2 = data[m_top->heap[2]];
          mad_cond_2 = top_order_value_2 + bottom_order_value < median_2;
          // condition for elevation of the order of both median heaps
-         if mad_cond_1 || mad_cond_2
+         if (mad_cond_1 || mad_cond_2)
          {
-            rank_plus_1(m_top);
-            rank_plus_1(m_bottom);
+            rank_plus_1(m_top, data);
+            rank_plus_1(m_bottom, data);
          }
          else
          {
@@ -282,7 +289,7 @@ T get_mad(Mediator* m_top, Mediator* m_bottom, T median, const int win_len, cons
 }
 
 template <typename T>
-void _hampel_filter(T* in_arr, int arr_len, int win_len, T* median, T* mad, T* out_arr, T* scale)
+void _hampel_filter(T* in_arr, int arr_len, int win_len, T* median, T* mad, T* out_arr, T scale)
 {
    if (win_len % 2 == 0)
    {
@@ -290,12 +297,12 @@ void _hampel_filter(T* in_arr, int arr_len, int win_len, T* median, T* mad, T* o
       exit(1);
    }
    const int rank = (win_len - 1) / 2;
-   const int half_wind_len_p_1 = rank + 1;
-   const int half_wind_len_m_1 = rank - 1;
+   const int half_wind_len_p = rank + 1;
+   const int half_wind_len_m = rank - 1;
    const int arr_len_thresh = arr_len - 1;
    const int lim = (win_len - 1) / 2;
-   int rank_bottom = rank_top - rank;
    int rank_top = win_len - 2;
+   int rank_bottom = rank_top - rank;
    int i;
    int i_shift = 0;
    Mediator* m = MediatorNew(win_len, rank);
@@ -310,24 +317,21 @@ void _hampel_filter(T* in_arr, int arr_len, int win_len, T* median, T* mad, T* o
    {
       MediatorReplaceHampel(data, m, m_bottom, m_top, in_arr[i]);
    }
-
    for (i=lim; i < arr_len; i++)
    {
       MediatorReplaceHampel(data, m, m_bottom, m_top, in_arr[i]);
       i_shift++;
       median[i_shift] = data[m->heap[0]];
-      mad[i_shift] = get_mad(m_top, m_bottom, median[i_shift], win_len, half_win_len_p, half_win_len_m);
+      mad[i_shift] = get_mad(m_top, m_bottom, median[i_shift], data, win_len, half_wind_len_p, half_wind_len_m);
       out_arr[i_shift] = filter_mad(in_arr[i_shift], median[i_shift], mad[i_shift], scale);
    }
-
    for (i=arr_len - lim; i < arr_len; i++)
    {
       MediatorReplaceHampel(data, m, m_bottom, m_top, in_arr[arr_len_thresh]);
       median[i] = data[m->heap[0]];
-      mad[i] = get_mad(m_top, m_bottom, median[i], win_len, half_win_len_p, half_win_len_m);
+      mad[i] = get_mad(m_top, m_bottom, median[i], data, win_len, half_wind_len_p, half_wind_len_m);
       out_arr[i] = filter_mad(in_arr[i], median[i], mad[i], scale);
    }
-
    free(data);
    data = nullptr;
    MediatorFree(m);
@@ -529,7 +533,7 @@ static PyObject* rank_filter(PyObject* self, PyObject* args)
 //define the module methods
 static PyMethodDef myMethods[] = {
     {"rank_filter", rank_filter, METH_VARARGS, "1D rank filter"},
-    {"hampel_filter", hampel_filter, METH_VARARGS, "Hampel filter"}
+    {"hampel_filter", hampel_filter, METH_VARARGS, "Hampel filter"},
     {NULL, NULL, 0, NULL}};
 
 //define the module
