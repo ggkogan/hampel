@@ -49,7 +49,7 @@ def maxSortDown(data, heap, pos, heapSize, i):
 
 # maintains min-heap property for all items above i, including median
 # returns true if median changed
-def minSortUp(data, heap, pos, i):
+def fminSortUp(data, heap, pos, i):
     while i > 0 and mmCmpExch(data, heap, pos, i, int(np.fix(i / 2))):
         i = int(np.fix(i / 2))
     return i == 0
