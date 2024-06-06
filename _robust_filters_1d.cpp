@@ -212,26 +212,11 @@ void MediatorReplaceRank(T* data, Mediator* m, T v)
 template <typename T>
 void rank_minus_1(Mediator* m, T* data)
 {
-   // printf("init: \n");
-   // for (int temp = -m->maxCt; temp <= m->minCt; temp++)
-   // {
-   //    printf("%d: %f \n", temp, data[m->heap[temp]]);
-   // }
    m->minCt++;
    m->maxCt--;
    m->heap[m->minCt] = m->heap[-m->maxCt - 1];
    m->pos[m->heap[m->minCt]] = m->pos[m->heap[-m->maxCt - 1]];
-   // printf("modified: \n");
-   // for (int temp = -m->maxCt; temp <= m->minCt; temp++)
-   // {
-   //    printf("%d: %f \n", temp, data[m->heap[temp]]);
-   // }
    if (minSortUp(data, m, m->minCt) && mmCmpExch(data, m, 0, -1)) { maxSortDown(data, m, -1); }
-   // printf("sorted: \n");
-   // for (int temp = -m->maxCt; temp <= m->minCt; temp++)
-   // {
-   //    printf("%d: %f \n", temp, data[m->heap[temp]]);
-   // }
 }
 
 template <typename T>
@@ -248,31 +233,21 @@ void print_mediator(Mediator* m, T* data)
 template <typename T>
 void rank_plus_1(Mediator* m, T* data)
 {
-   // printf("init: \n");
-   // print_mediator(m, data);
    m->minCt--;
    m->maxCt++;
    m->heap[-m->maxCt] = m->heap[m->minCt + 1];
    m->pos[m->heap[-m->maxCt]] = m->pos[m->heap[m->minCt + 1]];
-   // printf("modified: \n");
-   // print_mediator(m, data);
    if (maxSortUp(data, m, -m->maxCt) && mmCmpExch(data, m, 1, 0)) { minSortDown(data, m, 1); }
-   // printf("sorted: \n");
-   // print_mediator(m, data);
 }
 
 template <typename T>
-T get_mad_brut_force(T* data, T median){
-
-}
-
-template <typename T>
-T get_mad(Mediator* m_top, Mediator* m_bottom, T median, T* data, const int win_len){
+T get_mad(Mediator* m_top, Mediator* m_bottom, T median, T* data, const int win_len, long long int* counter){
    T top_order_value = data[m_top->heap[0]];
    T bottom_order_value = data[m_bottom->heap[0]];
    T mad, top_diff, bottom_diff;
    while (top_order_value - median > median - data[m_bottom->heap[-1]])
    {
+      *counter += 1;
       if (m_bottom->maxCt == 1)
       {
          bottom_diff = median - data[m_bottom->heap[-1]];
@@ -280,11 +255,6 @@ T get_mad(Mediator* m_top, Mediator* m_bottom, T median, T* data, const int win_
          mad = std::max(bottom_diff, top_diff);
          return mad;
       }
-      // printf("top: \n");
-      // print_mediator(m_top, data);
-      // printf("bottom: \n");
-      // print_mediator(m_bottom, data);
-      // printf("median: %f\n", median);
       rank_minus_1(m_top, data);
       rank_minus_1(m_bottom, data);
       top_order_value = data[m_top->heap[0]];
@@ -299,15 +269,11 @@ T get_mad(Mediator* m_top, Mediator* m_bottom, T median, T* data, const int win_
             mad = std::max(bottom_diff, top_diff);
             return mad;
          }
-         // printf("top: \n");
-         // print_mediator(m_top, data);
-         // printf("bottom: \n");
-         // print_mediator(m_bottom, data);
-         // printf("median: %f\n", median);
          rank_plus_1(m_top, data);
          rank_plus_1(m_bottom, data);
          top_order_value = data[m_top->heap[0]];
          bottom_order_value = data[m_bottom->heap[0]];
+         *counter += 1;
    }
    top_diff = top_order_value - median;
    bottom_diff = median - bottom_order_value;
@@ -315,75 +281,6 @@ T get_mad(Mediator* m_top, Mediator* m_bottom, T median, T* data, const int win_
    return mad;
 }
 
-/*
-template <typename T>
-T get_mad(Mediator* m_top, Mediator* m_bottom, T median, T* data, const int win_len, const int half_wind_len_p, const int half_wind_len_m)
-{
-   T top_order_value, bottom_order_value, bottom_order_value_1, bottom_order_value_2, mad;
-   T top_order_value_1, top_order_value_2;
-   T median_2 = 2 * median;
-   int half_win_m = (win_len - 1) / 2;
-   bool mad_cond_1, mad_cond_2;
-   int i = 0;
-   while (true)
-   {
-      printf("i = %d\n", i);
-      i++;
-      top_order_value = data[m_top->heap[0]];
-      bottom_order_value = data[m_bottom->heap[0]];
-      // the condition for the choice of the top/bottom order value for the calculation
-      // of the MAD is producing a larger deviation.
-      if (top_order_value + bottom_order_value >= median_2)
-      {
-         bottom_order_value_1 = data[m_bottom->heap[-1]];
-         mad_cond_1 = median_2 < top_order_value + bottom_order_value_1;
-         //condition for no ability to reduce the order of the median-heaps
-         if (m_top->maxCt == half_wind_len_p)
-         {
-            mad = mad_cond_1 ? median - bottom_order_value_1 : top_order_value - median;
-            return mad;
-         }
-         bottom_order_value_2 = data[m_bottom->heap[-2]];
-         mad_cond_2 = median_2 < top_order_value + bottom_order_value_2;
-         //condition for reduction of the order of both median heaps
-         if (mad_cond_1 || mad_cond_2)
-         {
-            rank_minus_1(m_top, data);
-            rank_minus_1(m_bottom, data);
-         }
-         else
-         {
-            mad = top_order_value - median;
-            return mad;
-         }
-      }
-      else
-      {
-         // value larger than top order
-         top_order_value_1 = data[m_top->heap[1]];
-         mad_cond_1 = top_order_value_1 + bottom_order_value < median_2;
-         if (m_bottom->maxCt == half_win_m)
-         {
-            mad = mad_cond_1 ? top_order_value_1 : median - bottom_order_value;
-            return mad;
-         }
-         top_order_value_2 = data[m_top->heap[2]];
-         mad_cond_2 = top_order_value_2 + bottom_order_value < median_2;
-         // condition for elevation of the order of both median heaps
-         if (mad_cond_1 || mad_cond_2)
-         {
-            rank_plus_1(m_top, data);
-            rank_plus_1(m_bottom, data);
-         }
-         else
-         {
-            mad = median - bottom_order_value;
-            return mad;
-         }
-      }
-   }
-}
-*/
 template <typename T>
 void _hampel_filter(T* in_arr, int arr_len, int win_len, T* median, T* mad, T* out_arr, T scale)
 {
@@ -403,22 +300,23 @@ void _hampel_filter(T* in_arr, int arr_len, int win_len, T* median, T* mad, T* o
    Mediator* m_top = MediatorNew(win_len, rank_top, true);
    Mediator* m_bottom = MediatorNew(win_len, rank_bottom, true);
    T* data = (T*)malloc(sizeof(T) * win_len);
+   long long int counter = 0;
    int temp;
    for (i=win_len - lim; i > 0; i--)
    {
       MediatorReplaceHampel(data, m, m_bottom, m_top, in_arr[0]);
-      get_mad(m_top, m_bottom, data[m->heap[0]], data, win_len);
+      get_mad(m_top, m_bottom, data[m->heap[0]], data, win_len, &counter);
    }
    for (i=0; i < lim; i++)
    {
       MediatorReplaceHampel(data, m, m_bottom, m_top, in_arr[i]);
-      get_mad(m_top, m_bottom, data[m->heap[0]], data, win_len);
+      get_mad(m_top, m_bottom, data[m->heap[0]], data, win_len, &counter);
    }
    for (i=lim; i < arr_len; i++)
    {
       MediatorReplaceHampel(data, m, m_bottom, m_top, in_arr[i]);
       median[i_shift] = data[m->heap[0]];
-      mad[i_shift] = get_mad(m_top, m_bottom, median[i_shift], data, win_len);
+      mad[i_shift] = get_mad(m_top, m_bottom, median[i_shift], data, win_len, &counter);
       out_arr[i_shift] = filter_mad(in_arr[i_shift], median[i_shift], mad[i_shift], scale);
       i_shift++;
    }
@@ -426,12 +324,13 @@ void _hampel_filter(T* in_arr, int arr_len, int win_len, T* median, T* mad, T* o
    {
       MediatorReplaceHampel(data, m, m_bottom, m_top, in_arr[arr_len_thresh]);
       median[i] = data[m->heap[0]];
-      mad[i] = get_mad(m_top, m_bottom, median[i], data, win_len);
+      mad[i] = get_mad(m_top, m_bottom, median[i], data, win_len, &counter);
       out_arr[i] = filter_mad(in_arr[i], median[i], mad[i], scale);
    }
    free(data);
    data = nullptr;
    MediatorFree(m);
+   printf("Counter: %lld\n", counter);
    //MediatorFree(m_top);
    //MediatorFree(m_bottom);
 }
@@ -521,54 +420,41 @@ PyMODINIT_FUNC PyInit__robust_filters_1d(void)
 int main()
 {
    int fs = 20000;
-   float freq = 13.47;
-   float impulse_intervals = 287;
+   double freq = 13.47;
+   double impulse_intervals = 287;
    int time = 2;
-   float dc_amp = 3.1;
+   double dc_amp = 3.1;
    int arr_len = fs * time;
 
-   float t[arr_len], in_arr[arr_len], out_arr[arr_len], median[arr_len], mad[arr_len];
+   double t[arr_len], in_arr[arr_len], out_arr[arr_len], median[arr_len], mad[arr_len];
    // seed the random number generator
    srand(0);
    for (int i = 0; i < 40000; i++)
    {
-      t[i] = (float)i / fs;
-      in_arr[i] = (-1 + t[i]) * dc_amp + sin(t[i] * 2 * M_PI * freq) + 0.1 * ((float)rand() / RAND_MAX - 0.5);
+      t[i] = (double)i / fs;
+      in_arr[i] = (-1 + t[i]) * dc_amp + sin(t[i] * 2 * M_PI * freq) + 0.1 * ((double)rand() / RAND_MAX - 0.5);
       if (i % (int)impulse_intervals == 0)
       {
-         in_arr[i] += 3 * ((float)rand() / RAND_MAX - 0.5);
+         in_arr[i] += 3 * ((double)rand() / RAND_MAX - 0.5);
       }
    }
    int win_len = 11;
-   float scale = 1.0;
+   double scale = 1.0;
+   time_t start, end;
+   start = clock();
    _hampel_filter(in_arr, arr_len, win_len, median, mad, out_arr, scale);
-   printf("OK\n");
-   
-   // save in_arr, median, mad, and out_arr to csv files with full precision
-   std::ofstream in_arr_file, median_file, mad_file, out_arr_file;
-   in_arr_file.open("in_arr.csv");
-   median_file.open("median.csv");
-   mad_file.open("mad.csv");
-   out_arr_file.open("out_arr.csv");
+   end = clock();
+   double time_taken = ((double)(end - start)) / CLOCKS_PER_SEC;
+   printf("Time taken: %f seconds for window size %d and signal size %d\n", time_taken, win_len, arr_len);
+
+   ofstream output_file;
+   output_file.open("output.csv");
+   output_file << "Time, Input, Output, Median, MAD" << endl;
    for (int i = 0; i < arr_len; i++)
    {
-      in_arr_file << in_arr[i] << "\n";
-      median_file << median[i] << "\n";
-      mad_file << mad[i] << "\n";
-      out_arr_file << out_arr[i] << "\n";
+      output_file << std::setprecision(23) << t[i] << ", " << in_arr[i] << ", " << out_arr[i] << ", " << median[i] << ", " << mad[i] << endl;
    }
-   in_arr_file.close();
-   median_file.close();
-   mad_file.close();
-   out_arr_file.close();
-
-   for (int i = 0; i < 20; i++)
-   {
-      printf("in_arr[%d] = %f\n", i, in_arr[i]);
-      printf("median[%d] = %f\n", i, median[i]);
-      printf("mad[%d] = %f\n", i, mad[i]);
-      printf("out_arr[%d] = %f\n", i, out_arr[i]);
-   }
+   output_file.close();
+   printf("Output for window size %d written to output.csv--\n", win_len);
    return 0;
 }  
-
