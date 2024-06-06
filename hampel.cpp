@@ -283,19 +283,19 @@ void _hampel_filter(T* in_arr, int arr_len, int win_len, T* median, T* mad, T* o
    }
    for (i=lim; i < arr_len; i++)
    {
-      input_ = in_arr[i];
       MediatorReplaceHampel(data, m, m_bottom, m_top, in_arr[i]);
       median[i_shift] = median_ = data[m->heap[0]];
       mad[i_shift] = mad_ = get_mad(m_top, m_bottom, median_, data, win_len);
+      input_ = in_arr[i_shift];
       out_arr[i_shift] = abs(input_ - median_) > scale * mad_ ? median_ : input_;
       i_shift++;
    }
    for (i=arr_len - lim; i < arr_len; i++)
    {
-      input_ = in_arr[arr_len_thresh];
-      MediatorReplaceHampel(data, m, m_bottom, m_top, input_);
+      MediatorReplaceHampel(data, m, m_bottom, m_top, in_arr[arr_len_thresh]);
       median[i] = median_ = data[m->heap[0]];
       mad[i] = mad_ = get_mad(m_top, m_bottom, median_, data, win_len);
+      input_ = in_arr[i];
       out_arr[i] = abs(input_ - median_) > scale * mad_ ? median_ : input_;
    }
    free(data);
@@ -307,9 +307,9 @@ void _hampel_filter(T* in_arr, int arr_len, int win_len, T* median, T* mad, T* o
 
 int main(int argc, char* argv[])
 {
-   if (argc != 2)
+   if (argc != 3)
    {
-      printf("Usage: %s <window_size>\n", argv[0]);
+      printf("Usage: %s <window_size> <scale>\n", argv[0]);
       exit(1);
    }
    int fs = 20000;
@@ -319,6 +319,7 @@ int main(int argc, char* argv[])
    double dc_amp = 3.1;
    int arr_len = fs * time;
    int win_len = std::stoi(argv[1]);
+   double scale = std::stod(argv[2]);
 
    double t[arr_len], in_arr[arr_len], out_arr[arr_len], median[arr_len], mad[arr_len];
    // seed the random number generator
@@ -332,14 +333,12 @@ int main(int argc, char* argv[])
          in_arr[i] += 3 * ((double)rand() / RAND_MAX - 0.5);
       }
    }
-   //window size taken from user argument
-   double scale = 1.0;
    time_t start, end;
    start = clock();
    _hampel_filter(in_arr, arr_len, win_len, median, mad, out_arr, scale);
    end = clock();
    double time_taken = ((double)(end - start)) / CLOCKS_PER_SEC * 1000;
-   printf("Time taken: %f miliseconds for window size %d and signal size %d\n", time_taken, win_len, arr_len);
+   printf("Time taken: %f miliseconds for window size %d and signal size %d, used scale %f \n", time_taken, win_len, arr_len, scale);
 
    ofstream output_file;
    //filename as function of window size
