@@ -2,12 +2,10 @@
 #include <iostream>
 #include <fstream>
 
-#include "hampel.h"
+#include "_hampel.h"
+#include "_rank_filter_1d.h"
 
 using namespace std;
-
-template <typename T> extern
-void _hampel_filter(T* in_arr, int arr_len, int win_len, T* median, T* mad, T* out_arr, T scale);
 
 int main(int argc, char* argv[])
 {
@@ -25,7 +23,7 @@ int main(int argc, char* argv[])
    int win_len = std::stoi(argv[1]);
    double scale = std::stod(argv[2]);
 
-   double t[arr_len], in_arr[arr_len], out_arr[arr_len], median[arr_len], mad[arr_len];
+   double t[arr_len], in_arr[arr_len], out_arr[arr_len], median[arr_len], mad[arr_len], out_arr2[arr_len];
    // seed the random number generator
    srand(0);
    for (int i = 0; i < 40000; i++)
@@ -41,6 +39,9 @@ int main(int argc, char* argv[])
    start = clock();
    _hampel_filter(in_arr, arr_len, win_len, median, mad, out_arr, scale);
    end = clock();
+   double cval = 0;
+   int origin = 0, mode = 0;
+   _rank_filter(in_arr, (win_len - 1) / 2, arr_len, win_len, out_arr2, mode, cval, origin);
    double time_taken = ((double)(end - start)) / CLOCKS_PER_SEC * 1000;
    printf("Time taken: %f miliseconds for window size %d and signal size %d, used scale %f \n", time_taken, win_len, arr_len, scale);
 
@@ -55,6 +56,16 @@ int main(int argc, char* argv[])
       output_file << std::setprecision(23) << t[i] << ", " << in_arr[i] << ", " << out_arr[i] << ", " << median[i] << ", " << mad[i] << endl;
    }
    output_file.close();
+
+   snprintf(filename, sizeof(filename), "output%d2.csv", win_len);
+   output_file.open(filename);
+   output_file << "time,input,output2" << endl;
+   for (int i = 0; i < arr_len; i++)
+   {
+      output_file << std::setprecision(23) << t[i] << ", " << in_arr[i] << ", " << out_arr2[i] << endl;
+   }
+   output_file.close();
+
    printf("Output for window size %d created\n", win_len);
    return 0;
 }  

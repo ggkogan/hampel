@@ -1,6 +1,9 @@
 #include <stdlib.h>
 #include <stdio.h>
 
+#ifndef ROBUST_FILTERS_UTILS_H
+#define ROBUST_FILTERS_UTILS_H
+
 struct Mediator//this is used for rank keeping
 {
    int*  pos;   //index into `heap` for each value
@@ -131,6 +134,15 @@ Mediator* MediatorNew(int nItems, int rank, bool buffer = false)
    return m;
 }
 
+template <typename T>
+void MediatorInsert(T *data, Mediator *m, T v) {
+  int p = m->pos[m->idx];
+  T old = data[m->idx];
+  data[m->idx] = v;
+  promoteIndex(m);
+  sortHeap(data, m, v, p, old);
+}
+
 // Deletes Mediator
 void MediatorDel(Mediator* m, int nItems, bool buffer = false)
 {
@@ -142,3 +154,4 @@ void MediatorDel(Mediator* m, int nItems, bool buffer = false)
     delete m;
     m = nullptr;
 }
+#endif
