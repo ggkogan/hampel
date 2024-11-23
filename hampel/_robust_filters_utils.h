@@ -1,4 +1,3 @@
-#include <stdlib.h>
 #include <stdio.h>
 
 #ifndef ROBUST_FILTERS_UTILS_H
@@ -8,6 +7,7 @@ struct Mediator//this is used for rank keeping
 {
    int*  pos;   //index into `heap` for each value
    int*  heap;  //max/rank/min heap holding indexes into `data`.
+   int*  heap_copy;
    int   N;     //allocated size.
    int   idx;   //position in circular queue
    int   minCt; //count of items in min heap
@@ -113,6 +113,15 @@ inline void promoteIndex(Mediator* m)
    }
 }
 
+template <typename T>
+void MediatorInsert(T *data, Mediator *m, T v) {
+  int p = m->pos[m->idx];
+  T old = data[m->idx];
+  data[m->idx] = v;
+  promoteIndex(m);
+  sortHeap(data, m, v, p, old);
+}
+
 //creates new Mediator: to calculate `nItems` running rank.
 Mediator* MediatorNew(int nItems, int rank, bool buffer = false)
 {
@@ -120,6 +129,7 @@ Mediator* MediatorNew(int nItems, int rank, bool buffer = false)
    int size = buffer ? 2 * nItems - 1 : nItems;
    m->pos = new int[size];
    m->heap = new int[size];
+   m->heap_copy = m->heap;
    if ((m == nullptr)||(m->pos == nullptr)||(m->heap == nullptr)){printf("out of memory\n"); exit(1);}
    m->heap += buffer ? rank + (nItems - 1) / 2 :rank; //points to rank
    m->N = nItems;
@@ -134,21 +144,12 @@ Mediator* MediatorNew(int nItems, int rank, bool buffer = false)
    return m;
 }
 
-template <typename T>
-void MediatorInsert(T *data, Mediator *m, T v) {
-  int p = m->pos[m->idx];
-  T old = data[m->idx];
-  data[m->idx] = v;
-  promoteIndex(m);
-  sortHeap(data, m, v, p, old);
-}
-
 // Deletes Mediator
 void MediatorDel(Mediator* m, int nItems, bool buffer = false)
 {
-    m->heap -= buffer ? m->maxCt + (nItems - 1) / 2 :m->maxCt; //points to rank
-    delete[] m->heap;
+    delete[] m->heap_copy;
     m->heap = nullptr;
+    m->heap_copy = nullptr;
     delete[] m->pos;
     m->pos = nullptr;
     delete m;

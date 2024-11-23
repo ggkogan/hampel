@@ -1,4 +1,5 @@
 #include "_robust_filters_utils.h"
+#include <algorithm>
 
 //Replaces item, maintains rank in O(lg nItems)
 template <typename T>
@@ -113,7 +114,6 @@ void _hampel_filter(T* in_arr, int arr_len, int win_len, T* median, T* mad, T* o
    Mediator* m_bottom = MediatorNew(win_len, rank_bottom, true);
    T* data = (T*)malloc(sizeof(T) * win_len);
    T input_, median_, mad_;
-   int temp;
    for (i=win_len - lim; i > 0; i--)
    {
       MediatorReplaceHampel(data, m, m_bottom, m_top, in_arr[0]);
